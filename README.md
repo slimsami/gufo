@@ -1,5 +1,41 @@
 # Gufo: the Strix Halo inference engine
 
+> [!NOTE]
+> **This is a community fork: Gufo + Qwen3.6-35B-A3B.** It adds the Qwen3.6-35B-A3B
+> MoE (`qwen35moe`) with fast prefill, MTP and DFlash2, and makes DFlash2 serving
+> work with concurrent requests. Everything else is upstream Gufo, rebased regularly.
+> The changes are proposed upstream in
+> [gufo-org/gufo#299](https://github.com/gufo-org/gufo/pull/299), which is paused
+> while upstream stabilizes its existing models.
+> **Please report problems with this variant [here](https://github.com/slimsami/gufo/issues), not upstream.**
+
+### Qwen3.6-35B-A3B quick start (this fork)
+
+- **Hardware:** tested on Strix Halo `gfx1151` with 128 GB (Framework Desktop) and the
+  ROCm 7.2.3 `gufo-runtime` image. Build exactly as upstream, see
+  [Build from source](#build-from-source).
+- **Weights:** Unsloth [`Qwen3.6-35B-A3B-MTP-GGUF`](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF),
+  `UD-Q6_K_XL` (faster) or `UD-Q8_K_XL`. It was validated with an earlier Unsloth MTP
+  build of the same quants; the current upload has not been re-tested yet.
+  For DFlash2, convert the draft as described in the
+  [model guide](docs/models/qwen3.6-35b-a3b/README.md#speculative-decoding-dflash2).
+- **Serve:** this model has no built-in sampling preset yet, so pass the GGUF's
+  recommended values explicitly:
+
+  ```sh
+  ./result/bin/gufo serve --sessions 4 llm --model Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf \
+    --context 262144 --max-tokens 32768 --temperature 1.0 --top-p 0.95 --top-k 20 \
+    --speculative dflash2 --dflash-model Qwen3.6-35B-A3B-DFlash2-Q8_0.gguf \
+    --draft-tokens 7 --draft-policy adaptive --prefill-chunk 1024
+  ```
+
+- **Numbers:** prefill is roughly 2x llama.cpp Vulkan on the same GGUF; see the
+  [benchmarks](docs/models/qwen3.6-35b-a3b/BENCHMARKS.md) and
+  [experiments](docs/models/qwen3.6-35b-a3b/EXPERIMENTS.md).
+- **Versions:** tags `vX.Y.Z-qwen35moe.N` mark rebases onto upstream `vX.Y.Z` that passed
+  the CPU contract suite, the GPU tests and a serving smoke test on gfx1151. Branch
+  `qwen35moe` (default) carries this notice; `feat/qwen35moe-35b-a3b` is the upstream PR.
+
 <p align="center">
   <img src="assets/gufo-logo.jpg" alt="Gufo logo" width="180">
 </p>
